@@ -1,0 +1,17 @@
+
+{
+  "name": "WATER JET PARTS",
+  "short_name": "WATER JET",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0756a5",
+  "icons": [
+    {
+      "src": "./water-jet-parts-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
