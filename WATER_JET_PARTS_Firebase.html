@@ -1,0 +1,1522 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Jet Parts Management</title>
+
+<style>
+*{box-sizing:border-box;}
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#edf2f7;
+    color:#222;
+}
+
+.hidden{display:none!important;}
+
+#loginPage{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+    background:linear-gradient(135deg,#123456,#2575a8);
+}
+
+.login-box{
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    width:100%;
+    max-width:360px;
+    box-shadow:0 5px 20px #0003;
+    text-align:center;
+}
+
+.login-box h2{color:#123456;margin-top:0;}
+
+input,select,textarea{
+    width:100%;
+    padding:11px;
+    margin:7px 0;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:15px;
+}
+
+textarea{resize:vertical;min-height:65px;}
+
+button{
+    border:none;
+    padding:10px 15px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+}
+
+button:active{transform:scale(.98);}
+
+.login-btn{
+    width:100%;
+    background:#087bdb;
+    color:white;
+    margin-top:10px;
+}
+
+#appPage{display:none;padding:12px;}
+
+.header{
+    background:#123456;
+    color:white;
+    padding:17px;
+    border-radius:8px;
+    text-align:center;
+    margin-bottom:12px;
+}
+
+.header h2{margin:0;}
+
+.header small{
+    display:block;
+    margin-top:5px;
+    color:#dceeff;
+}
+
+.top-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+}
+
+.top-actions button{background:#d9534f;color:white;}
+
+.nav{display:flex;gap:7px;margin-bottom:15px;}
+
+.nav button{
+    flex:1;
+    background:#d5dce5;
+    color:#222;
+    padding:12px 5px;
+}
+
+.nav button.active{background:#087bdb;color:white;}
+
+.panel{
+    background:white;
+    padding:15px;
+    border-radius:9px;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px #0001;
+}
+
+.panel h3{margin-top:0;color:#123456;}
+
+.panel-heading{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+}
+
+.panel-heading h3{margin:0;}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px 12px;
+}
+
+.form-group label{
+    display:block;
+    font-size:13px;
+    font-weight:bold;
+    margin-top:7px;
+    color:#444;
+}
+
+.full{grid-column:1/-1;}
+
+.save-btn{
+    width:100%;
+    background:#198754;
+    color:white;
+    margin-top:12px;
+    padding:12px;
+}
+
+.cancel-btn{
+    width:100%;
+    background:#777;
+    color:white;
+    margin-top:7px;
+}
+
+.table-wrap{
+    width:100%;
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:700px;
+    font-size:13px;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:9px;
+    text-align:left;
+    white-space:nowrap;
+}
+
+th{
+    background:#123456;
+    color:white;
+    position:relative;
+}
+
+tr:nth-child(even){background:#f4f7fa;}
+
+/* EXCEL STYLE FILTER BUTTON */
+
+.filter-btn{
+    display:inline-block;
+    margin-left:5px;
+    padding:3px 6px;
+    border-radius:4px;
+    background:#e6edf5;
+    color:#123456;
+    font-size:12px;
+    vertical-align:middle;
+}
+
+.filter-btn.filtered{
+    background:#ffc107;
+    color:#222;
+}
+
+.edit-btn{
+    background:#ffc107;
+    color:#222;
+    padding:6px 9px;
+    margin:2px;
+}
+
+.delete-btn{
+    background:#dc3545;
+    color:white;
+    padding:6px 9px;
+    margin:2px;
+}
+
+/* FILTER POPUP */
+
+#filterMenu{
+    display:none;
+    position:fixed;
+    z-index:99999;
+    width:260px;
+    max-width:calc(100vw - 20px);
+    max-height:390px;
+    overflow:hidden;
+    background:white;
+    color:#222;
+    border:1px solid #aaa;
+    border-radius:7px;
+    box-shadow:0 5px 20px #0004;
+    padding:10px;
+}
+
+.filter-title{
+    font-weight:bold;
+    color:#123456;
+    margin-bottom:7px;
+    font-size:14px;
+}
+
+#filterSearch{
+    width:100%;
+    margin:0 0 8px;
+    padding:8px;
+    font-size:13px;
+}
+
+.filter-options{
+    max-height:210px;
+    overflow-y:auto;
+    border-top:1px solid #ddd;
+    border-bottom:1px solid #ddd;
+    padding:5px 0;
+}
+
+.filter-option{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:5px 3px;
+    font-size:13px;
+    cursor:pointer;
+    word-break:break-word;
+}
+
+.filter-option input{
+    width:16px;
+    height:16px;
+    margin:0;
+    flex-shrink:0;
+}
+
+.filter-actions{
+    display:flex;
+    gap:6px;
+    margin-top:9px;
+}
+
+.filter-actions button{
+    flex:1;
+    padding:8px 5px;
+    font-size:12px;
+}
+
+.filter-select-all{background:#087bdb;color:white;}
+.filter-clear{background:#e5e5e5;color:#222;}
+.filter-done{background:#198754;color:white;}
+
+.backup-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:12px;
+}
+
+.backup-actions button{background:#123456;color:white;}
+
+#restoreFile{display:none;}
+
+.footer{
+    text-align:center;
+    color:#777;
+    font-size:12px;
+    padding:15px;
+}
+
+@media(max-width:600px){
+    #appPage{padding:8px;}
+    .form-grid{grid-template-columns:1fr;}
+    .full{grid-column:auto;}
+    .nav button{font-size:12px;}
+}
+</style>
+</head>
+
+<body>
+
+<div id="loginPage">
+    <div class="login-box">
+        <h2>WATER JET PARTS</h2>
+        <p>Management System</p>
+
+        <input type="email" id="username" placeholder="Admin Email Address" autocomplete="username">
+        <input type="password" id="password" placeholder="Admin Password" autocomplete="current-password">
+
+        <button class="login-btn" onclick="login()">ADMIN LOGIN</button>
+        <button class="login-btn" style="background:#198754" onclick="guestLogin()">CONTINUE AS GUEST</button>
+        <p id="loginError" style="color:red;font-size:13px;"></p>
+    </div>
+</div>
+
+<div id="appPage">
+
+    <div class="header">
+        <h2>WATER JET PARTS MANAGEMENT</h2>
+        <small>Parts Purchase & Use Record System</small>
+    </div>
+
+    <div class="top-actions">
+        <span id="userInfo">User</span>
+        <button onclick="logout()">LOGOUT</button>
+    </div>
+
+    <div class="nav">
+        <button id="btnPurchase" class="active" onclick="openTab('purchase')">PURCHASE</button>
+        <button id="btnUse" onclick="openTab('use')">USE</button>
+        <button id="btnStock" onclick="openTab('stock')">STOCK</button>
+    </div>
+
+    <!-- ENTRY FORM -->
+
+    <div class="panel" id="entryPanel">
+
+        <h3 id="formTitle">PURCHASE ENTRY FORM</h3>
+
+        <input type="hidden" id="type" value="Parts">
+        <input type="hidden" id="editId">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="date">
+            </div>
+
+            <div class="form-group hidden" id="machineField">
+                <label>Machine Number (1-324)</label>
+                <input type="number" id="machine" min="1" max="324" step="1" placeholder="Enter Machine Number">
+            </div>
+
+            <div class="form-group">
+                <label>Parts Name</label>
+                <input type="text" id="partName" placeholder="Parts Name">
+            </div>
+
+            <div class="form-group">
+                <label>Parts Code</label>
+                <input type="text" id="partCode" placeholder="Parts Code">
+            </div>
+
+            <div class="form-group hidden" id="mcdField">
+                <label>MCD Code</label>
+                <input type="text" id="mcdCode" placeholder="MCD Code">
+            </div>
+
+            <div class="form-group hidden" id="sectionField">
+                <label>Section</label>
+                <input type="text" id="section" placeholder="Section">
+            </div>
+
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="quantity" min="1" step="any" placeholder="Quantity">
+            </div>
+
+            <div class="form-group hidden" id="workerField">
+                <label>Worker</label>
+                <input type="text" id="worker" placeholder="Worker Name">
+            </div>
+
+            <div class="form-group hidden" id="receivedField">
+                <label>Received From</label>
+                <input type="text" id="receivedFrom" placeholder="Received From">
+            </div>
+
+            <div class="form-group hidden" id="checkerField">
+                <label>Checker</label>
+                <input type="text" id="checker" placeholder="Checker Name">
+            </div>
+
+            <div class="form-group full">
+                <label>Remarks</label>
+                <textarea id="remarks" placeholder="Write Remarks"></textarea>
+            </div>
+
+        </div>
+
+        <button class="save-btn" id="saveBtn" onclick="saveRecord()">SAVE RECORD</button>
+        <button class="cancel-btn hidden" id="cancelBtn" onclick="clearForm()">CANCEL EDIT</button>
+
+    </div>
+
+    <!-- PURCHASE HISTORY -->
+
+    <div class="panel" id="partsPanel">
+
+        <div class="panel-heading">
+            <h3>PURCHASE HISTORY</h3>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date <button class="filter-btn" onclick="showFilter(event,'purchase','date')">▼</button></th>
+                        <th>Parts Name <button class="filter-btn" onclick="showFilter(event,'purchase','partName')">▼</button></th>
+                        <th>Parts Code <button class="filter-btn" onclick="showFilter(event,'purchase','partCode')">▼</button></th>
+                        <th>MCD Code <button class="filter-btn" onclick="showFilter(event,'purchase','mcdCode')">▼</button></th>
+                        <th>Section <button class="filter-btn" onclick="showFilter(event,'purchase','section')">▼</button></th>
+                        <th>Quantity <button class="filter-btn" onclick="showFilter(event,'purchase','quantity')">▼</button></th>
+                        <th>Remarks <button class="filter-btn" onclick="showFilter(event,'purchase','remarks')">▼</button></th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="partsTable"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- USE HISTORY -->
+
+    <div class="panel hidden" id="usePanel">
+
+        <div class="panel-heading">
+            <h3>USE HISTORY</h3>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date <button class="filter-btn" onclick="showFilter(event,'use','date')">▼</button></th>
+                        <th>Machine <button class="filter-btn" onclick="showFilter(event,'use','machine')">▼</button></th>
+                        <th>Parts Name <button class="filter-btn" onclick="showFilter(event,'use','partName')">▼</button></th>
+                        <th>Parts Code <button class="filter-btn" onclick="showFilter(event,'use','partCode')">▼</button></th>
+                        <th>Quantity <button class="filter-btn" onclick="showFilter(event,'use','quantity')">▼</button></th>
+                        <th>Worker <button class="filter-btn" onclick="showFilter(event,'use','worker')">▼</button></th>
+                        <th>Received From <button class="filter-btn" onclick="showFilter(event,'use','receivedFrom')">▼</button></th>
+                        <th>Checker <button class="filter-btn" onclick="showFilter(event,'use','checker')">▼</button></th>
+                        <th>Remarks <button class="filter-btn" onclick="showFilter(event,'use','remarks')">▼</button></th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="useTable"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- STOCK -->
+
+    <div class="panel hidden" id="stockPanel">
+
+        <div class="panel-heading">
+            <h3>STOCK DETAILS</h3>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parts Name <button class="filter-btn" onclick="showFilter(event,'stock','partName')">▼</button></th>
+                        <th>Parts Code <button class="filter-btn" onclick="showFilter(event,'stock','partCode')">▼</button></th>
+                        <th>Total Purchase <button class="filter-btn" onclick="showFilter(event,'stock','purchase')">▼</button></th>
+                        <th>Total Use <button class="filter-btn" onclick="showFilter(event,'stock','use')">▼</button></th>
+                        <th>Current Balance <button class="filter-btn" onclick="showFilter(event,'stock','balance')">▼</button></th>
+                    </tr>
+                </thead>
+                <tbody id="stockTable"></tbody>
+            </table>
+        </div>
+
+        <div class="backup-actions">
+            <button onclick="downloadCSV()">DOWNLOAD CSV</button>
+            <button onclick="backupData()">BACKUP DATA</button>
+            <button onclick="document.getElementById('restoreFile').click()">RESTORE DATA</button>
+            <input type="file" id="restoreFile" accept=".json" onchange="restoreData(event)">
+        </div>
+
+    </div>
+
+    <div class="footer">Water Jet Parts Management System</div>
+
+</div>
+
+<!-- FILTER MENU -->
+
+<div id="filterMenu">
+    <div class="filter-title" id="filterTitle">Filter</div>
+    <input type="text" id="filterSearch" placeholder="Search..." oninput="renderFilterOptions()">
+    <div class="filter-options" id="filterOptions"></div>
+
+    <div class="filter-actions">
+        <button class="filter-select-all" onclick="selectAllFilter()">Select All</button>
+        <button class="filter-clear" onclick="clearFilter()">Clear Filter</button>
+        <button class="filter-done" onclick="closeFilter()">Done</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+
+const DB_KEY = "waterJetPartsDB";
+const ADMIN_UID = "TvXmHVmVpoWsCC0ZRY9VxwqH8ag2";
+const firebaseConfig = {
+    apiKey: "AIzaSyBP8LLyO9qyiXbqNTR4xVf9WjXvh7IgAk",
+    authDomain: "water-jet-parts.firebaseapp.com",
+    databaseURL: "https://water-jet-parts-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "water-jet-parts",
+    storageBucket: "water-jet-parts.firebasestorage.app",
+    messagingSenderId: "677902488472",
+    appId: "1:677902488472:web:4d17ab674e0e8f98be91ed",
+    measurementId: "G-XRZEQ94J7Q"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
+const recordsRef = database.ref("records");
+let recordsListener = null;
+let importingOldData = false;
+
+let currentUser = "";
+let activeTab = "purchase";
+let records = [];
+
+/* FILTER DATA */
+
+let activeFilters = {
+    purchase:{},
+    use:{},
+    stock:{}
+};
+
+let currentFilter = {
+    table:"",
+    key:""
+};
+
+function get(id){
+    return document.getElementById(id);
+}
+
+/* FIREBASE DATABASE */
+
+function loadData(){
+    if(recordsListener){
+        recordsRef.off("value", recordsListener);
+        recordsListener = null;
+    }
+
+    recordsListener = function(snapshot){
+        const data = snapshot.val();
+        if(data && typeof data === "object"){
+            records = Object.values(data).filter(Boolean);
+        }else{
+            records = [];
+            // Import old phone-only records once, if the cloud database is empty.
+            if(currentUser === "Admin" && !importingOldData){
+                try{
+                    const old = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+                    if(Array.isArray(old) && old.length){
+                        importingOldData = true;
+                        const mapped = {};
+                        old.forEach(r => { if(r && r.id != null) mapped[String(r.id)] = r; });
+                        recordsRef.set(mapped).then(()=>{
+                            localStorage.removeItem(DB_KEY);
+                        }).catch(err=>{
+                            importingOldData = false;
+                            alert("পুরোনো ডাটা আপলোড হয়নি: " + err.message);
+                        });
+                        return;
+                    }
+                }catch(e){}
+            }
+        }
+        refresh();
+    };
+    recordsRef.on("value", recordsListener, function(error){
+        alert("ডাটাবেজ পড়া যাচ্ছে না: " + error.message);
+    });
+}
+
+function saveData(){
+    const data = {};
+    records.forEach(r => {
+        if(r && r.id != null) data[String(r.id)] = r;
+    });
+    return recordsRef.set(data);
+}
+
+/* FIREBASE LOGIN */
+
+function showApp(user){
+    currentUser = user.uid === ADMIN_UID ? "Admin" : "Guest";
+    get("loginPage").style.display = "none";
+    get("appPage").style.display = "block";
+    get("userInfo").innerText = "Logged in as: " + currentUser;
+    setPermission();
+    loadData();
+    openTab("purchase");
+}
+
+async function login(){
+    const email = get("username").value.trim();
+    const password = get("password").value;
+    get("loginError").innerText = "";
+    if(!email || !password){
+        get("loginError").innerText = "Admin email and password দিন";
+        return;
+    }
+    try{
+        await auth.signInWithEmailAndPassword(email, password);
+    }catch(error){
+        get("loginError").innerText = "Login হয়নি: " + error.message;
+    }
+}
+
+async function guestLogin(){
+    get("loginError").innerText = "";
+    try{
+        await auth.signInAnonymously();
+    }catch(error){
+        get("loginError").innerText = "Guest login হয়নি: " + error.message;
+    }
+}
+
+/* PERMISSION */
+
+function setPermission(){
+
+    if(currentUser === "Guest"){
+        get("entryPanel").classList.add("hidden");
+    }
+    else{
+        get("entryPanel").classList.remove("hidden");
+    }
+}
+
+/* LOGOUT */
+
+async function logout(){
+    closeFilter();
+    try{
+        await auth.signOut();
+    }catch(error){
+        alert("Logout হয়নি: " + error.message);
+    }
+}
+
+/* TAB CONTROL */
+
+function openTab(tab){
+
+    activeTab = tab;
+
+    get("partsPanel").classList.add("hidden");
+    get("usePanel").classList.add("hidden");
+    get("stockPanel").classList.add("hidden");
+
+    get("btnPurchase").classList.remove("active");
+    get("btnUse").classList.remove("active");
+    get("btnStock").classList.remove("active");
+
+    if(tab === "purchase"){
+
+        get("partsPanel").classList.remove("hidden");
+        get("btnPurchase").classList.add("active");
+
+        get("type").value = "Parts";
+        get("formTitle").innerText = "PURCHASE ENTRY FORM";
+
+        if(currentUser === "Admin"){
+            get("entryPanel").classList.remove("hidden");
+        }
+    }
+
+    else if(tab === "use"){
+
+        get("usePanel").classList.remove("hidden");
+        get("btnUse").classList.add("active");
+
+        get("type").value = "Use";
+        get("formTitle").innerText = "USE ENTRY FORM";
+
+        if(currentUser === "Admin"){
+            get("entryPanel").classList.remove("hidden");
+        }
+    }
+
+    else if(tab === "stock"){
+
+        get("stockPanel").classList.remove("hidden");
+        get("btnStock").classList.add("active");
+
+        get("entryPanel").classList.add("hidden");
+    }
+
+    updateMachineField();
+    closeFilter();
+}
+
+/* FORM FIELD CONTROL */
+
+function updateMachineField(){
+
+    const type = get("type").value;
+    const isUse = type === "Use";
+
+    get("machineField").classList.toggle("hidden",!isUse);
+    get("mcdField").classList.toggle("hidden",isUse);
+    get("sectionField").classList.toggle("hidden",isUse);
+    get("workerField").classList.toggle("hidden",!isUse);
+    get("receivedField").classList.toggle("hidden",!isUse);
+    get("checkerField").classList.toggle("hidden",!isUse);
+
+    get("machine").required = isUse;
+    get("mcdCode").required = false;
+    get("section").required = false;
+}
+
+/* CLEAR FORM */
+
+function clearForm(){
+
+    get("editId").value = "";
+    get("date").value = "";
+    get("machine").value = "";
+    get("partName").value = "";
+    get("partCode").value = "";
+    get("mcdCode").value = "";
+    get("section").value = "";
+    get("quantity").value = "";
+    get("worker").value = "";
+    get("receivedFrom").value = "";
+    get("checker").value = "";
+    get("remarks").value = "";
+
+    get("type").value = activeTab === "use" ? "Use" : "Parts";
+
+    get("saveBtn").innerText = "SAVE RECORD";
+    get("cancelBtn").classList.add("hidden");
+
+    updateMachineField();
+}
+
+/* SAVE RECORD */
+
+async function saveRecord(){
+
+    if(currentUser !== "Admin"){
+        alert("Guest cannot add records!");
+        return;
+    }
+
+    const type = get("type").value;
+    const date = get("date").value;
+    const partName = get("partName").value.trim();
+    const partCode = get("partCode").value.trim();
+    const quantity = Number(get("quantity").value);
+
+    if(
+        !date ||
+        !partName ||
+        !partCode ||
+        !get("quantity").value ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0
+    ){
+        alert("Please fill all required fields correctly!");
+        return;
+    }
+
+    let machine = "";
+
+    if(type === "Use"){
+
+        machine = Number(get("machine").value);
+
+        if(
+            !get("machine").value ||
+            !Number.isInteger(machine) ||
+            machine < 1 ||
+            machine > 324
+        ){
+            alert("Machine Number must be between 1 and 324!");
+            return;
+        }
+    }
+
+    const record = {
+
+        id:get("editId").value || Date.now().toString(),
+        type:type,
+        date:date,
+        machine:machine,
+        partName:partName,
+        partCode:partCode,
+        mcdCode:get("mcdCode").value.trim(),
+        section:get("section").value.trim(),
+        quantity:quantity,
+        worker:get("worker").value.trim(),
+        receivedFrom:get("receivedFrom").value.trim(),
+        checker:get("checker").value.trim(),
+        remarks:get("remarks").value.trim()
+    };
+
+    const editId = get("editId").value;
+
+    if(editId){
+
+        const index = records.findIndex(r =>
+            String(r.id) === String(editId)
+        );
+
+        if(index !== -1){
+            records[index] = record;
+        }
+
+    }
+    else{
+        records.push(record);
+    }
+
+    try{
+        await saveData();
+        alert(editId ? "Record Updated Successfully!" : "Record Saved Successfully!");
+        clearForm();
+        refresh();
+        openTab(type === "Use" ? "use" : "purchase");
+    }catch(error){
+        alert("ডাটা সেভ হয়নি: " + error.message);
+    }
+}
+
+/* EDIT RECORD */
+
+function editRecord(id){
+
+    if(currentUser !== "Admin") return;
+
+    const r = records.find(x =>
+        String(x.id) === String(id)
+    );
+
+    if(!r) return;
+
+    const tab = r.type === "Use" ? "use" : "purchase";
+
+    openTab(tab);
+
+    get("editId").value = r.id;
+    get("type").value = r.type || "Parts";
+    get("date").value = r.date || "";
+    get("machine").value = r.machine || "";
+    get("partName").value = r.partName || "";
+    get("partCode").value = r.partCode || "";
+    get("mcdCode").value = r.mcdCode || "";
+    get("section").value = r.section || "";
+    get("quantity").value = r.quantity || "";
+    get("worker").value = r.worker || "";
+    get("receivedFrom").value = r.receivedFrom || "";
+    get("checker").value = r.checker || "";
+    get("remarks").value = r.remarks || "";
+
+    get("saveBtn").innerText = "UPDATE RECORD";
+    get("cancelBtn").classList.remove("hidden");
+
+    updateMachineField();
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+}
+
+/* DELETE RECORD */
+
+async function deleteRecord(id){
+
+    if(currentUser !== "Admin") return;
+
+    if(!confirm("Are you sure you want to delete this record?")){
+        return;
+    }
+
+    records = records.filter(r =>
+        String(r.id) !== String(id)
+    );
+
+    try{
+        await saveData();
+        refresh();
+    }catch(error){
+        alert("ডাটা মুছতে সমস্যা হয়েছে: " + error.message);
+    }
+}
+
+/* ESCAPE HTML */
+
+function escapeHTML(value){
+
+    return String(value ?? "").replace(/[&<>"']/g,function(ch){
+
+        return {
+            "&":"&amp;",
+            "<":"&lt;",
+            ">":"&gt;",
+            '"':"&quot;",
+            "'":"&#39;"
+        }[ch];
+    });
+}
+
+/* STOCK DATA */
+
+function getStockData(){
+
+    const stock = {};
+
+    records.forEach(r=>{
+
+        const code = (r.partCode || "").trim();
+
+        if(!code) return;
+
+        if(!stock[code]){
+
+            stock[code] = {
+                partName:r.partName || "",
+                partCode:code,
+                purchase:0,
+                use:0
+            };
+        }
+
+        if(r.type === "Parts"){
+            stock[code].purchase += Number(r.quantity) || 0;
+        }
+        else if(r.type === "Use"){
+            stock[code].use += Number(r.quantity) || 0;
+        }
+    });
+
+    return Object.values(stock).map(s=>({
+
+        ...s,
+        balance:s.purchase - s.use
+
+    }));
+}
+
+/* FILTER CHECK */
+
+function passesFilter(table,key,value){
+
+    const selected = activeFilters[table][key];
+
+    if(!selected) return true;
+
+    return selected.includes(String(value ?? ""));
+}
+
+/* RENDER HISTORY */
+
+function renderHistory(){
+
+    const partsTable = get("partsTable");
+    const useTable = get("useTable");
+
+    partsTable.innerHTML = "";
+    useTable.innerHTML = "";
+
+    records.forEach(r=>{
+
+        const action = currentUser === "Admin"
+
+        ? `<button class="edit-btn" onclick="editRecord('${escapeHTML(r.id)}')">EDIT</button>
+           <button class="delete-btn" onclick="deleteRecord('${escapeHTML(r.id)}')">DELETE</button>`
+
+        : "";
+
+        if(r.type === "Parts"){
+
+            const keys = [
+                "date","partName","partCode","mcdCode",
+                "section","quantity","remarks"
+            ];
+
+            const passed = keys.every(key =>
+                passesFilter("purchase",key,r[key])
+            );
+
+            if(!passed) return;
+
+            partsTable.innerHTML += `
+                <tr>
+                    <td>${escapeHTML(r.date)}</td>
+                    <td>${escapeHTML(r.partName)}</td>
+                    <td>${escapeHTML(r.partCode)}</td>
+                    <td>${escapeHTML(r.mcdCode || "")}</td>
+                    <td>${escapeHTML(r.section || "")}</td>
+                    <td>${escapeHTML(r.quantity)}</td>
+                    <td>${escapeHTML(r.remarks)}</td>
+                    <td>${action}</td>
+                </tr>
+            `;
+        }
+
+        else if(r.type === "Use"){
+
+            const keys = [
+                "date","machine","partName","partCode",
+                "quantity","worker","receivedFrom",
+                "checker","remarks"
+            ];
+
+            const passed = keys.every(key =>
+                passesFilter("use",key,r[key])
+            );
+
+            if(!passed) return;
+
+            useTable.innerHTML += `
+                <tr>
+                    <td>${escapeHTML(r.date)}</td>
+                    <td>${escapeHTML(r.machine)}</td>
+                    <td>${escapeHTML(r.partName)}</td>
+                    <td>${escapeHTML(r.partCode)}</td>
+                    <td>${escapeHTML(r.quantity)}</td>
+                    <td>${escapeHTML(r.worker)}</td>
+                    <td>${escapeHTML(r.receivedFrom)}</td>
+                    <td>${escapeHTML(r.checker)}</td>
+                    <td>${escapeHTML(r.remarks)}</td>
+                    <td>${action}</td>
+                </tr>
+            `;
+        }
+    });
+}
+
+/* RENDER STOCK */
+
+function renderStock(){
+
+    const stockTable = get("stockTable");
+    stockTable.innerHTML = "";
+
+    const stock = getStockData();
+
+    stock.forEach(s=>{
+
+        const keys = [
+            "partName","partCode","purchase","use","balance"
+        ];
+
+        const passed = keys.every(key =>
+            passesFilter("stock",key,s[key])
+        );
+
+        if(!passed) return;
+
+        stockTable.innerHTML += `
+            <tr>
+                <td>${escapeHTML(s.partName)}</td>
+                <td>${escapeHTML(s.partCode)}</td>
+                <td>${escapeHTML(s.purchase)}</td>
+                <td>${escapeHTML(s.use)}</td>
+                <td>${escapeHTML(s.balance)}</td>
+            </tr>
+        `;
+    });
+}
+
+/* REFRESH ALL */
+
+function refresh(){
+    renderHistory();
+    renderStock();
+}
+
+/* GET FILTER VALUES */
+
+function getFilterValues(table,key){
+
+    let values = [];
+
+    if(table === "purchase"){
+
+        values = records
+            .filter(r=>r.type === "Parts")
+            .map(r=>r[key]);
+    }
+
+    else if(table === "use"){
+
+        values = records
+            .filter(r=>r.type === "Use")
+            .map(r=>r[key]);
+    }
+
+    else if(table === "stock"){
+
+        values = getStockData().map(s=>s[key]);
+    }
+
+    return [...new Set(values.map(v=>String(v ?? "")))].sort(
+        (a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})
+    );
+}
+
+/* OPEN FILTER */
+
+function showFilter(event,table,key){
+
+    event.stopPropagation();
+
+    currentFilter = {table,key};
+
+    const menu = get("filterMenu");
+    const button = event.currentTarget;
+
+    const rect = button.getBoundingClientRect();
+
+    menu.style.display = "block";
+
+    let left = rect.left;
+    let top = rect.bottom + 5;
+
+    if(left + 260 > window.innerWidth){
+        left = window.innerWidth - 270;
+    }
+
+    if(top + 390 > window.innerHeight){
+        top = Math.max(10,rect.top - 390);
+    }
+
+    menu.style.left = Math.max(10,left) + "px";
+    menu.style.top = top + "px";
+
+    get("filterTitle").innerText =
+        "Filter: " + key.replace(/([A-Z])/g," $1");
+
+    get("filterSearch").value = "";
+
+    renderFilterOptions();
+}
+
+/* FILTER OPTIONS */
+
+function renderFilterOptions(){
+
+    const {table,key} = currentFilter;
+
+    if(!table || !key) return;
+
+    const values = getFilterValues(table,key);
+    const selected = activeFilters[table][key];
+    const search = get("filterSearch").value.toLowerCase();
+
+    const filteredValues = values.filter(v =>
+        v.toLowerCase().includes(search)
+    );
+
+    const container = get("filterOptions");
+
+    if(filteredValues.length === 0){
+
+        container.innerHTML =
+            `<div style="padding:10px;color:#777;font-size:13px;">No values found</div>`;
+
+        return;
+    }
+
+    container.innerHTML = filteredValues.map(value=>{
+
+        const checked =
+            !selected || selected.includes(value);
+
+        return `
+            <label class="filter-option">
+                <input
+                    type="checkbox"
+                    value="${escapeHTML(value)}"
+                    ${checked ? "checked" : ""}
+                    onchange="toggleFilterValue(this.value,this.checked)"
+                >
+                <span>${escapeHTML(value === "" ? "(Blank)" : value)}</span>
+            </label>
+        `;
+
+    }).join("");
+}
+
+/* SELECT / UNSELECT VALUE */
+
+function toggleFilterValue(value,checked){
+
+    const {table,key} = currentFilter;
+
+    const allValues = getFilterValues(table,key);
+
+    let selected = activeFilters[table][key];
+
+    if(!selected){
+        selected = [...allValues];
+    }
+    else{
+        selected = [...selected];
+    }
+
+    if(checked){
+
+        if(!selected.includes(value)){
+            selected.push(value);
+        }
+
+    }
+    else{
+
+        selected = selected.filter(v=>v !== value);
+
+    }
+
+    if(selected.length === allValues.length){
+        activeFilters[table][key] = null;
+    }
+    else{
+        activeFilters[table][key] = selected;
+    }
+
+    refresh();
+    updateFilterButtons();
+}
+
+/* SELECT ALL */
+
+function selectAllFilter(){
+
+    const {table,key} = currentFilter;
+
+    activeFilters[table][key] = null;
+
+    refresh();
+    renderFilterOptions();
+    updateFilterButtons();
+}
+
+/* CLEAR FILTER */
+
+function clearFilter(){
+
+    selectAllFilter();
+}
+
+/* FILTER BUTTON INDICATOR */
+
+function updateFilterButtons(){
+
+    document.querySelectorAll(".filter-btn").forEach(button=>{
+
+        const onclickText = button.getAttribute("onclick") || "";
+
+        const match = onclickText.match(
+            /showFilter\(event,'([^']+)','([^']+)'\)/
+        );
+
+        if(!match) return;
+
+        const table = match[1];
+        const key = match[2];
+
+        const selected = activeFilters[table][key];
+
+        button.classList.toggle("filtered",!!selected);
+    });
+}
+
+/* CLOSE FILTER */
+
+function closeFilter(){
+    get("filterMenu").style.display = "none";
+}
+
+/* CLOSE WHEN CLICK OUTSIDE */
+
+document.addEventListener("click",function(event){
+
+    const menu = get("filterMenu");
+
+    if(
+        menu.style.display === "block" &&
+        !menu.contains(event.target) &&
+        !event.target.classList.contains("filter-btn")
+    ){
+        closeFilter();
+    }
+});
+
+get("filterMenu").addEventListener("click",function(event){
+    event.stopPropagation();
+});
+
+/* CSV DOWNLOAD */
+
+function downloadCSV(){
+
+    if(currentUser !== "Admin") return;
+
+    let csv = [];
+
+    csv.push([
+        "Type","Date","Machine","Parts Name","Parts Code",
+        "MCD Code","Section","Quantity","Worker",
+        "Received From","Checker","Remarks"
+    ].join(","));
+
+    records.forEach(r=>{
+
+        const row = [
+
+            r.type === "Parts" ? "Purchase" : "Use",
+            r.date,
+            r.machine,
+            r.partName,
+            r.partCode,
+            r.mcdCode,
+            r.section,
+            r.quantity,
+            r.worker,
+            r.receivedFrom,
+            r.checker,
+            r.remarks
+
+        ].map(v=>
+            '"' + String(v ?? "").replace(/"/g,'""') + '"'
+        );
+
+        csv.push(row.join(","));
+    });
+
+    const blob = new Blob(
+        ["\uFEFF" + csv.join("\n")],
+        {type:"text/csv;charset=utf-8;"}
+    );
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "Water_Jet_Parts_Data.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+/* BACKUP */
+
+function backupData(){
+
+    if(currentUser !== "Admin") return;
+
+    const data = JSON.stringify(records,null,2);
+
+    const blob = new Blob(
+        [data],
+        {type:"application/json"}
+    );
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "Water_Jet_Parts_Backup.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+/* RESTORE */
+
+function restoreData(event){
+
+    if(currentUser !== "Admin") return;
+
+    const file = event.target.files[0];
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+        try{
+
+            const data = JSON.parse(e.target.result);
+
+            if(!Array.isArray(data)){
+                throw new Error("Invalid backup file");
+            }
+
+            const valid = data.every(r=>
+
+                r &&
+                (r.type === "Parts" || r.type === "Use") &&
+                r.date &&
+                r.partName &&
+                r.partCode &&
+                Number.isFinite(Number(r.quantity)) &&
+                Number(r.quantity) > 0 &&
+                (
+                    r.type !== "Use" ||
+                    (
+                        Number.isInteger(Number(r.machine)) &&
+                        Number(r.machine) >= 1 &&
+                        Number(r.machine) <= 324
+                    )
+                )
+            );
+
+            if(!valid){
+                alert("Backup file contains invalid records!");
+                return;
+            }
+
+            if(!confirm("Restore backup? Current data will be replaced.")){
+                return;
+            }
+
+            records = data;
+
+            /* RESET FILTERS AFTER RESTORE */
+            activeFilters = {
+                purchase:{},
+                use:{},
+                stock:{}
+            };
+
+            saveData().then(()=>{
+                refresh();
+                updateFilterButtons();
+                alert("Data Restored Successfully!");
+            }).catch(error=>{
+                alert("Backup restore হয়নি: " + error.message);
+            });
+
+        }
+        catch(error){
+            alert("Invalid Backup File!");
+        }
+
+        event.target.value = "";
+    };
+
+    reader.readAsText(file);
+}
+
+/* START: RESTORE LOGIN STATE */
+
+auth.onAuthStateChanged(function(user){
+    if(user){
+        showApp(user);
+    }else{
+        currentUser = "";
+        if(recordsListener){
+            recordsRef.off("value", recordsListener);
+            recordsListener = null;
+        }
+        records = [];
+        get("appPage").style.display = "none";
+        get("loginPage").style.display = "flex";
+        get("username").value = "";
+        get("password").value = "";
+        get("loginError").innerText = "";
+    }
+});
+
+</script>
+
+</body>
+</html>
