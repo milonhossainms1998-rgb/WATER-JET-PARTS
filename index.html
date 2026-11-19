@@ -368,9 +368,9 @@ tr:nth-child(even){background:#f4f7fa;}
                 <input type="date" id="date">
             </div>
 
-            <div class="form-group hidden" id="srField">
-                <label>S.R. Number</label>
-                <input type="text" id="srNumber" placeholder="Enter S.R. Number">
+            <div class="form-group hidden" id="invoiceField">
+                <label>Invoice Number</label>
+                <input type="text" id="invoiceNumber" placeholder="Enter Invoice Number">
             </div>
 
             <div class="form-group hidden" id="machineField">
@@ -443,7 +443,7 @@ tr:nth-child(even){background:#f4f7fa;}
                 <thead>
                     <tr>
                         <th>Date <button class="filter-btn" onclick="showFilter(event,'purchase','date')">▼</button></th>
-                        <th>S.R. Number <button class="filter-btn" onclick="showFilter(event,'purchase','srNumber')">▼</button></th>
+                        <th>Invoice Number <button class="filter-btn" onclick="showFilter(event,'purchase','invoiceNumber')">▼</button></th>
                         <th>Parts Name <button class="filter-btn" onclick="showFilter(event,'purchase','partName')">▼</button></th>
                         <th>Parts Code <button class="filter-btn" onclick="showFilter(event,'purchase','partCode')">▼</button></th>
                         <th>MCD Code <button class="filter-btn" onclick="showFilter(event,'purchase','mcdCode')">▼</button></th>
@@ -608,7 +608,10 @@ function loadData(){
 
         if(data && typeof data === "object"){
 
-            records = Object.values(data).filter(Boolean);
+            records = Object.values(data).filter(Boolean).map(r=>({
+                ...r,
+                invoiceNumber: r.invoiceNumber ?? r.srNumber ?? ""
+            }));
 
         }else{
 
@@ -630,7 +633,11 @@ function loadData(){
 
                         old.forEach(r=>{
                             if(r && r.id != null){
-                                mapped[String(r.id)] = r;
+                                mapped[String(r.id)] = {
+                                    ...r,
+                                    invoiceNumber: r.invoiceNumber ?? r.srNumber ?? ""
+                                };
+                                delete mapped[String(r.id)].srNumber;
                             }
                         });
 
@@ -663,7 +670,9 @@ function saveData(){
 
     records.forEach(r=>{
         if(r && r.id != null){
-            data[String(r.id)] = r;
+            const savedRecord = {...r};
+            delete savedRecord.srNumber;
+            data[String(r.id)] = savedRecord;
         }
     });
 
@@ -812,7 +821,7 @@ function updateMachineField(){
     const type = get("type").value;
     const isUse = type === "Use";
 
-    get("srField").classList.toggle("hidden",isUse);
+    get("invoiceField").classList.toggle("hidden",isUse);
     get("machineField").classList.toggle("hidden",!isUse);
     get("mcdField").classList.toggle("hidden",isUse);
     get("sectionField").classList.toggle("hidden",isUse);
@@ -820,7 +829,7 @@ function updateMachineField(){
     get("receivedField").classList.toggle("hidden",!isUse);
     get("checkerField").classList.toggle("hidden",!isUse);
 
-    get("srNumber").required = !isUse;
+    get("invoiceNumber").required = !isUse;
     get("machine").required = isUse;
     get("mcdCode").required = false;
     get("section").required = false;
@@ -832,7 +841,7 @@ function clearForm(){
 
     get("editId").value = "";
     get("date").value = "";
-    get("srNumber").value = "";
+    get("invoiceNumber").value = "";
     get("machine").value = "";
     get("partName").value = "";
     get("partCode").value = "";
@@ -863,8 +872,8 @@ async function saveRecord(){
 
     const type = get("type").value;
     const date = get("date").value;
-    const srNumber = type === "Parts"
-        ? get("srNumber").value.trim()
+    const invoiceNumber = type === "Parts"
+        ? get("invoiceNumber").value.trim()
         : "";
 
     const partName = get("partName").value.trim();
@@ -873,8 +882,8 @@ async function saveRecord(){
 
     const editId = get("editId").value;
 
-    if(type === "Parts" && !srNumber){
-        alert("Please enter S.R. Number!");
+    if(type === "Parts" && !invoiceNumber){
+        alert("Please enter Invoice Number!");
         return;
     }
 
@@ -882,12 +891,12 @@ async function saveRecord(){
 
         const duplicate = records.some(r=>
             r.type === "Parts" &&
-            String(r.srNumber || "").trim().toLowerCase() === srNumber.toLowerCase() &&
+            String(r.invoiceNumber ?? r.srNumber ?? "").trim().toLowerCase() === invoiceNumber.toLowerCase() &&
             String(r.id) !== String(editId)
         );
 
         if(duplicate){
-            alert("এই S.R. Number আগে ব্যবহার করা হয়েছে!");
+            alert("এই Invoice Number আগে ব্যবহার করা হয়েছে!");
             return;
         }
     }
@@ -926,7 +935,7 @@ async function saveRecord(){
         id:editId || Date.now().toString(),
         type:type,
         date:date,
-        srNumber:srNumber,
+        invoiceNumber:invoiceNumber,
         machine:machine,
         partName:partName,
         partCode:partCode,
@@ -995,7 +1004,7 @@ function editRecord(id){
     get("editId").value = r.id;
     get("type").value = r.type || "Parts";
     get("date").value = r.date || "";
-    get("srNumber").value = r.srNumber || "";
+    get("invoiceNumber").value = r.invoiceNumber ?? r.srNumber ?? "";
     get("machine").value = r.machine || "";
     get("partName").value = r.partName || "";
     get("partCode").value = r.partCode || "";
@@ -1132,13 +1141,19 @@ function renderHistory(){
 
         if(r.type === "Parts"){
 
+            const invoice = r.invoiceNumber ?? r.srNumber ?? "";
+
             const keys = [
-                "date","srNumber","partName","partCode",
+                "date","invoiceNumber","partName","partCode",
                 "mcdCode","section","quantity","remarks"
             ];
 
             const passed = keys.every(key=>
-                passesFilter("purchase",key,r[key])
+                passesFilter(
+                    "purchase",
+                    key,
+                    key === "invoiceNumber" ? invoice : r[key]
+                )
             );
 
             if(!passed) return;
@@ -1146,7 +1161,7 @@ function renderHistory(){
             partsTable.innerHTML += `
                 <tr>
                     <td>${escapeHTML(r.date)}</td>
-                    <td>${escapeHTML(r.srNumber || "")}</td>
+                    <td>${escapeHTML(invoice)}</td>
                     <td>${escapeHTML(r.partName)}</td>
                     <td>${escapeHTML(r.partCode)}</td>
                     <td>${escapeHTML(r.mcdCode || "")}</td>
@@ -1242,7 +1257,10 @@ function getFilterValues(table,key){
 
         values = records
             .filter(r=>r.type === "Parts")
-            .map(r=>r[key]);
+            .map(r=>key === "invoiceNumber"
+                ? (r.invoiceNumber ?? r.srNumber ?? "")
+                : r[key]
+            );
 
     }else if(table === "use"){
 
@@ -1463,7 +1481,7 @@ function downloadCSV(){
     let csv = [];
 
     csv.push([
-        "Type","Date","S.R. Number","Machine","Parts Name",
+        "Type","Date","Invoice Number","Machine","Parts Name",
         "Parts Code","MCD Code","Section","Quantity",
         "Worker","Received From","Checker","Remarks"
     ].join(","));
@@ -1474,7 +1492,7 @@ function downloadCSV(){
 
             r.type === "Parts" ? "Purchase" : "Use",
             r.date,
-            r.srNumber || "",
+            r.invoiceNumber ?? r.srNumber ?? "",
             r.machine,
             r.partName,
             r.partCode,
@@ -1515,7 +1533,16 @@ function backupData(){
 
     if(currentUser !== "Admin") return;
 
-    const data = JSON.stringify(records,null,2);
+    const data = JSON.stringify(
+        records.map(r=>{
+            const item = {...r};
+            item.invoiceNumber = item.invoiceNumber ?? item.srNumber ?? "";
+            delete item.srNumber;
+            return item;
+        }),
+        null,
+        2
+    );
 
     const blob = new Blob(
         [data],
@@ -1583,7 +1610,12 @@ function restoreData(event){
                 return;
             }
 
-            records = data;
+            records = data.map(r=>({
+                ...r,
+                invoiceNumber: r.invoiceNumber ?? r.srNumber ?? ""
+            }));
+
+            records.forEach(r=>delete r.srNumber);
 
             activeFilters = {
                 purchase:{},
