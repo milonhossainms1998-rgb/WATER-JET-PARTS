@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" href="water-jet-parts-icon.png">
+<link rel="icon" type="image/png" href="water-jet-parts-icon.png">
 <link rel="apple-touch-icon" href="water-jet-parts-icon.png">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#ffffff">
@@ -192,8 +192,6 @@ th{
 
 tr:nth-child(even){background:#f4f7fa;}
 
-/* EXCEL STYLE FILTER BUTTON */
-
 .filter-btn{
     display:inline-block;
     margin-left:5px;
@@ -223,8 +221,6 @@ tr:nth-child(even){background:#f4f7fa;}
     padding:6px 9px;
     margin:2px;
 }
-
-/* FILTER POPUP */
 
 #filterMenu{
     display:none;
@@ -358,8 +354,6 @@ tr:nth-child(even){background:#f4f7fa;}
         <button id="btnStock" onclick="openTab('stock')">STOCK</button>
     </div>
 
-    <!-- ENTRY FORM -->
-
     <div class="panel" id="entryPanel">
 
         <h3 id="formTitle">PURCHASE ENTRY FORM</h3>
@@ -372,6 +366,11 @@ tr:nth-child(even){background:#f4f7fa;}
             <div class="form-group">
                 <label>Date</label>
                 <input type="date" id="date">
+            </div>
+
+            <div class="form-group hidden" id="srField">
+                <label>S.R. Number</label>
+                <input type="text" id="srNumber" placeholder="Enter S.R. Number">
             </div>
 
             <div class="form-group hidden" id="machineField">
@@ -444,6 +443,7 @@ tr:nth-child(even){background:#f4f7fa;}
                 <thead>
                     <tr>
                         <th>Date <button class="filter-btn" onclick="showFilter(event,'purchase','date')">▼</button></th>
+                        <th>S.R. Number <button class="filter-btn" onclick="showFilter(event,'purchase','srNumber')">▼</button></th>
                         <th>Parts Name <button class="filter-btn" onclick="showFilter(event,'purchase','partName')">▼</button></th>
                         <th>Parts Code <button class="filter-btn" onclick="showFilter(event,'purchase','partCode')">▼</button></th>
                         <th>MCD Code <button class="filter-btn" onclick="showFilter(event,'purchase','mcdCode')">▼</button></th>
@@ -547,6 +547,7 @@ tr:nth-child(even){background:#f4f7fa;}
 
 const DB_KEY = "waterJetPartsDB";
 const ADMIN_UID = "TvXmHVmVpoWsCC0ZRY9VxwqH8ag2";
+
 const firebaseConfig = {
     apiKey: "AIzaSyBP8LLyO9qyiXbqNTRx4fVf9WjXvh7IgAk",
     authDomain: "water-jet-parts.firebaseapp.com",
@@ -559,17 +560,23 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const database = firebase.database();
 const recordsRef = database.ref("records");
+
+/* DISABLE LOGIN SESSION MEMORY */
+
+const authReady = auth.setPersistence(
+    firebase.auth.Auth.Persistence.NONE
+);
+
 let recordsListener = null;
 let importingOldData = false;
 
 let currentUser = "";
 let activeTab = "purchase";
 let records = [];
-
-/* FILTER DATA */
 
 let activeFilters = {
     purchase:{},
@@ -589,84 +596,133 @@ function get(id){
 /* FIREBASE DATABASE */
 
 function loadData(){
+
     if(recordsListener){
         recordsRef.off("value", recordsListener);
         recordsListener = null;
     }
 
     recordsListener = function(snapshot){
+
         const data = snapshot.val();
+
         if(data && typeof data === "object"){
+
             records = Object.values(data).filter(Boolean);
+
         }else{
+
             records = [];
-            // Import old phone-only records once, if the cloud database is empty.
+
             if(currentUser === "Admin" && !importingOldData){
+
                 try{
-                    const old = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+
+                    const old = JSON.parse(
+                        localStorage.getItem(DB_KEY) || "[]"
+                    );
+
                     if(Array.isArray(old) && old.length){
+
                         importingOldData = true;
+
                         const mapped = {};
-                        old.forEach(r => { if(r && r.id != null) mapped[String(r.id)] = r; });
+
+                        old.forEach(r=>{
+                            if(r && r.id != null){
+                                mapped[String(r.id)] = r;
+                            }
+                        });
+
                         recordsRef.set(mapped).then(()=>{
                             localStorage.removeItem(DB_KEY);
+                            importingOldData = false;
                         }).catch(err=>{
                             importingOldData = false;
                             alert("পুরোনো ডাটা আপলোড হয়নি: " + err.message);
                         });
+
                         return;
                     }
+
                 }catch(e){}
             }
         }
+
         refresh();
     };
+
     recordsRef.on("value", recordsListener, function(error){
         alert("ডাটাবেজ পড়া যাচ্ছে না: " + error.message);
     });
 }
 
 function saveData(){
+
     const data = {};
-    records.forEach(r => {
-        if(r && r.id != null) data[String(r.id)] = r;
+
+    records.forEach(r=>{
+        if(r && r.id != null){
+            data[String(r.id)] = r;
+        }
     });
+
     return recordsRef.set(data);
 }
 
 /* FIREBASE LOGIN */
 
 function showApp(user){
+
     currentUser = user.uid === ADMIN_UID ? "Admin" : "Guest";
+
     get("loginPage").style.display = "none";
     get("appPage").style.display = "block";
+
     get("userInfo").innerText = "Logged in as: " + currentUser;
+
     setPermission();
     loadData();
     openTab("purchase");
 }
 
 async function login(){
+
     const email = get("username").value.trim();
     const password = get("password").value;
+
     get("loginError").innerText = "";
+
     if(!email || !password){
         get("loginError").innerText = "Admin email and password দিন";
         return;
     }
+
     try{
-        await auth.signInWithEmailAndPassword(email, password);
+
+        await authReady;
+        await auth.signInWithEmailAndPassword(email,password);
+
     }catch(error){
+
         get("loginError").innerText = "Login হয়নি: " + error.message;
+
     }
 }
 
 async function guestLogin(){
+
     get("loginError").innerText = "";
+
     try{
+
+        await authReady;
         await auth.signInAnonymously();
+
     }catch(error){
+
         get("loginError").innerText = "Guest login হয়নি: " + error.message;
+
     }
 }
 
@@ -676,8 +732,7 @@ function setPermission(){
 
     if(currentUser === "Guest"){
         get("entryPanel").classList.add("hidden");
-    }
-    else{
+    }else{
         get("entryPanel").classList.remove("hidden");
     }
 }
@@ -685,11 +740,17 @@ function setPermission(){
 /* LOGOUT */
 
 async function logout(){
+
     closeFilter();
+
     try{
+
         await auth.signOut();
+
     }catch(error){
+
         alert("Logout হয়নি: " + error.message);
+
     }
 }
 
@@ -718,9 +779,8 @@ function openTab(tab){
         if(currentUser === "Admin"){
             get("entryPanel").classList.remove("hidden");
         }
-    }
 
-    else if(tab === "use"){
+    }else if(tab === "use"){
 
         get("usePanel").classList.remove("hidden");
         get("btnUse").classList.add("active");
@@ -731,14 +791,14 @@ function openTab(tab){
         if(currentUser === "Admin"){
             get("entryPanel").classList.remove("hidden");
         }
-    }
 
-    else if(tab === "stock"){
+    }else if(tab === "stock"){
 
         get("stockPanel").classList.remove("hidden");
         get("btnStock").classList.add("active");
 
         get("entryPanel").classList.add("hidden");
+
     }
 
     updateMachineField();
@@ -752,6 +812,7 @@ function updateMachineField(){
     const type = get("type").value;
     const isUse = type === "Use";
 
+    get("srField").classList.toggle("hidden",isUse);
     get("machineField").classList.toggle("hidden",!isUse);
     get("mcdField").classList.toggle("hidden",isUse);
     get("sectionField").classList.toggle("hidden",isUse);
@@ -759,6 +820,7 @@ function updateMachineField(){
     get("receivedField").classList.toggle("hidden",!isUse);
     get("checkerField").classList.toggle("hidden",!isUse);
 
+    get("srNumber").required = !isUse;
     get("machine").required = isUse;
     get("mcdCode").required = false;
     get("section").required = false;
@@ -770,6 +832,7 @@ function clearForm(){
 
     get("editId").value = "";
     get("date").value = "";
+    get("srNumber").value = "";
     get("machine").value = "";
     get("partName").value = "";
     get("partCode").value = "";
@@ -800,9 +863,34 @@ async function saveRecord(){
 
     const type = get("type").value;
     const date = get("date").value;
+    const srNumber = type === "Parts"
+        ? get("srNumber").value.trim()
+        : "";
+
     const partName = get("partName").value.trim();
     const partCode = get("partCode").value.trim();
     const quantity = Number(get("quantity").value);
+
+    const editId = get("editId").value;
+
+    if(type === "Parts" && !srNumber){
+        alert("Please enter S.R. Number!");
+        return;
+    }
+
+    if(type === "Parts"){
+
+        const duplicate = records.some(r=>
+            r.type === "Parts" &&
+            String(r.srNumber || "").trim().toLowerCase() === srNumber.toLowerCase() &&
+            String(r.id) !== String(editId)
+        );
+
+        if(duplicate){
+            alert("এই S.R. Number আগে ব্যবহার করা হয়েছে!");
+            return;
+        }
+    }
 
     if(
         !date ||
@@ -835,9 +923,10 @@ async function saveRecord(){
 
     const record = {
 
-        id:get("editId").value || Date.now().toString(),
+        id:editId || Date.now().toString(),
         type:type,
         date:date,
+        srNumber:srNumber,
         machine:machine,
         partName:partName,
         partCode:partCode,
@@ -848,13 +937,12 @@ async function saveRecord(){
         receivedFrom:get("receivedFrom").value.trim(),
         checker:get("checker").value.trim(),
         remarks:get("remarks").value.trim()
-    };
 
-    const editId = get("editId").value;
+    };
 
     if(editId){
 
-        const index = records.findIndex(r =>
+        const index = records.findIndex(r=>
             String(r.id) === String(editId)
         );
 
@@ -862,19 +950,29 @@ async function saveRecord(){
             records[index] = record;
         }
 
-    }
-    else{
+    }else{
+
         records.push(record);
+
     }
 
     try{
+
         await saveData();
-        alert(editId ? "Record Updated Successfully!" : "Record Saved Successfully!");
+
+        alert(editId
+            ? "Record Updated Successfully!"
+            : "Record Saved Successfully!"
+        );
+
         clearForm();
         refresh();
         openTab(type === "Use" ? "use" : "purchase");
+
     }catch(error){
+
         alert("ডাটা সেভ হয়নি: " + error.message);
+
     }
 }
 
@@ -884,7 +982,7 @@ function editRecord(id){
 
     if(currentUser !== "Admin") return;
 
-    const r = records.find(x =>
+    const r = records.find(x=>
         String(x.id) === String(id)
     );
 
@@ -897,6 +995,7 @@ function editRecord(id){
     get("editId").value = r.id;
     get("type").value = r.type || "Parts";
     get("date").value = r.date || "";
+    get("srNumber").value = r.srNumber || "";
     get("machine").value = r.machine || "";
     get("partName").value = r.partName || "";
     get("partCode").value = r.partCode || "";
@@ -929,15 +1028,19 @@ async function deleteRecord(id){
         return;
     }
 
-    records = records.filter(r =>
+    records = records.filter(r=>
         String(r.id) !== String(id)
     );
 
     try{
+
         await saveData();
         refresh();
+
     }catch(error){
+
         alert("ডাটা মুছতে সমস্যা হয়েছে: " + error.message);
+
     }
 }
 
@@ -954,6 +1057,7 @@ function escapeHTML(value){
             '"':"&quot;",
             "'":"&#39;"
         }[ch];
+
     });
 }
 
@@ -977,14 +1081,15 @@ function getStockData(){
                 purchase:0,
                 use:0
             };
+
         }
 
         if(r.type === "Parts"){
             stock[code].purchase += Number(r.quantity) || 0;
-        }
-        else if(r.type === "Use"){
+        }else if(r.type === "Use"){
             stock[code].use += Number(r.quantity) || 0;
         }
+
     });
 
     return Object.values(stock).map(s=>({
@@ -1028,11 +1133,11 @@ function renderHistory(){
         if(r.type === "Parts"){
 
             const keys = [
-                "date","partName","partCode","mcdCode",
-                "section","quantity","remarks"
+                "date","srNumber","partName","partCode",
+                "mcdCode","section","quantity","remarks"
             ];
 
-            const passed = keys.every(key =>
+            const passed = keys.every(key=>
                 passesFilter("purchase",key,r[key])
             );
 
@@ -1041,6 +1146,7 @@ function renderHistory(){
             partsTable.innerHTML += `
                 <tr>
                     <td>${escapeHTML(r.date)}</td>
+                    <td>${escapeHTML(r.srNumber || "")}</td>
                     <td>${escapeHTML(r.partName)}</td>
                     <td>${escapeHTML(r.partCode)}</td>
                     <td>${escapeHTML(r.mcdCode || "")}</td>
@@ -1050,9 +1156,8 @@ function renderHistory(){
                     <td>${action}</td>
                 </tr>
             `;
-        }
 
-        else if(r.type === "Use"){
+        }else if(r.type === "Use"){
 
             const keys = [
                 "date","machine","partName","partCode",
@@ -1060,7 +1165,7 @@ function renderHistory(){
                 "checker","remarks"
             ];
 
-            const passed = keys.every(key =>
+            const passed = keys.every(key=>
                 passesFilter("use",key,r[key])
             );
 
@@ -1080,7 +1185,9 @@ function renderHistory(){
                     <td>${action}</td>
                 </tr>
             `;
+
         }
+
     });
 }
 
@@ -1099,7 +1206,7 @@ function renderStock(){
             "partName","partCode","purchase","use","balance"
         ];
 
-        const passed = keys.every(key =>
+        const passed = keys.every(key=>
             passesFilter("stock",key,s[key])
         );
 
@@ -1114,6 +1221,7 @@ function renderStock(){
                 <td>${escapeHTML(s.balance)}</td>
             </tr>
         `;
+
     });
 }
 
@@ -1135,22 +1243,24 @@ function getFilterValues(table,key){
         values = records
             .filter(r=>r.type === "Parts")
             .map(r=>r[key]);
-    }
 
-    else if(table === "use"){
+    }else if(table === "use"){
 
         values = records
             .filter(r=>r.type === "Use")
             .map(r=>r[key]);
-    }
 
-    else if(table === "stock"){
+    }else if(table === "stock"){
 
         values = getStockData().map(s=>s[key]);
+
     }
 
     return [...new Set(values.map(v=>String(v ?? "")))].sort(
-        (a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})
+        (a,b)=>a.localeCompare(b,undefined,{
+            numeric:true,
+            sensitivity:"base"
+        })
     );
 }
 
@@ -1203,7 +1313,7 @@ function renderFilterOptions(){
     const selected = activeFilters[table][key];
     const search = get("filterSearch").value.toLowerCase();
 
-    const filteredValues = values.filter(v =>
+    const filteredValues = values.filter(v=>
         v.toLowerCase().includes(search)
     );
 
@@ -1249,8 +1359,7 @@ function toggleFilterValue(value,checked){
 
     if(!selected){
         selected = [...allValues];
-    }
-    else{
+    }else{
         selected = [...selected];
     }
 
@@ -1260,8 +1369,7 @@ function toggleFilterValue(value,checked){
             selected.push(value);
         }
 
-    }
-    else{
+    }else{
 
         selected = selected.filter(v=>v !== value);
 
@@ -1269,8 +1377,7 @@ function toggleFilterValue(value,checked){
 
     if(selected.length === allValues.length){
         activeFilters[table][key] = null;
-    }
-    else{
+    }else{
         activeFilters[table][key] = selected;
     }
 
@@ -1294,7 +1401,6 @@ function selectAllFilter(){
 /* CLEAR FILTER */
 
 function clearFilter(){
-
     selectAllFilter();
 }
 
@@ -1318,6 +1424,7 @@ function updateFilterButtons(){
         const selected = activeFilters[table][key];
 
         button.classList.toggle("filtered",!!selected);
+
     });
 }
 
@@ -1340,6 +1447,7 @@ document.addEventListener("click",function(event){
     ){
         closeFilter();
     }
+
 });
 
 get("filterMenu").addEventListener("click",function(event){
@@ -1355,9 +1463,9 @@ function downloadCSV(){
     let csv = [];
 
     csv.push([
-        "Type","Date","Machine","Parts Name","Parts Code",
-        "MCD Code","Section","Quantity","Worker",
-        "Received From","Checker","Remarks"
+        "Type","Date","S.R. Number","Machine","Parts Name",
+        "Parts Code","MCD Code","Section","Quantity",
+        "Worker","Received From","Checker","Remarks"
     ].join(","));
 
     records.forEach(r=>{
@@ -1366,6 +1474,7 @@ function downloadCSV(){
 
             r.type === "Parts" ? "Purchase" : "Use",
             r.date,
+            r.srNumber || "",
             r.machine,
             r.partName,
             r.partCode,
@@ -1382,6 +1491,7 @@ function downloadCSV(){
         );
 
         csv.push(row.join(","));
+
     });
 
     const blob = new Blob(
@@ -1461,6 +1571,7 @@ function restoreData(event){
                         Number(r.machine) <= 324
                     )
                 )
+
             );
 
             if(!valid){
@@ -1474,7 +1585,6 @@ function restoreData(event){
 
             records = data;
 
-            /* RESET FILTERS AFTER RESTORE */
             activeFilters = {
                 purchase:{},
                 use:{},
@@ -1482,42 +1592,67 @@ function restoreData(event){
             };
 
             saveData().then(()=>{
+
                 refresh();
                 updateFilterButtons();
                 alert("Data Restored Successfully!");
+
             }).catch(error=>{
+
                 alert("Backup restore হয়নি: " + error.message);
+
             });
 
-        }
-        catch(error){
+        }catch(error){
+
             alert("Invalid Backup File!");
+
         }
 
         event.target.value = "";
+
     };
 
     reader.readAsText(file);
 }
 
-/* START: RESTORE LOGIN STATE */
+/* START: LOGIN STATE */
 
-auth.onAuthStateChanged(function(user){
-    if(user){
-        showApp(user);
-    }else{
-        currentUser = "";
-        if(recordsListener){
-            recordsRef.off("value", recordsListener);
-            recordsListener = null;
+authReady.then(()=>{
+
+    auth.onAuthStateChanged(function(user){
+
+        if(user){
+
+            showApp(user);
+
+        }else{
+
+            currentUser = "";
+
+            if(recordsListener){
+                recordsRef.off("value",recordsListener);
+                recordsListener = null;
+            }
+
+            records = [];
+
+            get("appPage").style.display = "none";
+            get("loginPage").style.display = "flex";
+
+            get("username").value = "";
+            get("password").value = "";
+            get("loginError").innerText = "";
+
         }
-        records = [];
-        get("appPage").style.display = "none";
-        get("loginPage").style.display = "flex";
-        get("username").value = "";
-        get("password").value = "";
-        get("loginError").innerText = "";
-    }
+
+    });
+
+}).catch(error=>{
+
+    get("loginError").innerText =
+        "Login settings error: " + error.message;
+
 });
 
 </script>
