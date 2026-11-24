@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,6 +97,54 @@ button:active{transform:scale(.98);}
     gap:8px;
     flex-wrap:wrap;
     margin-bottom:12px;
+}
+
+.top-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.sync-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:bold;
+    background:#e6f7ed;
+    color:#137333;
+    border:1px solid #b7e1c4;
+}
+
+.sync-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#198754;
+    display:inline-block;
+}
+
+.sync-badge.syncing{
+    background:#fff8e1;
+    color:#9a6700;
+    border-color:#ffe082;
+}
+
+.sync-badge.syncing .sync-dot{
+    background:#f59f00;
+}
+
+.sync-badge.offline{
+    background:#fdecea;
+    color:#b71c1c;
+    border-color:#f5c6cb;
+}
+
+.sync-badge.offline .sync-dot{
+    background:#dc3545;
 }
 
 .top-actions button{background:#d9534f;color:white;}
@@ -345,7 +392,13 @@ tr:nth-child(even){background:#f4f7fa;}
 
     <div class="top-actions">
         <span id="userInfo">User</span>
-        <button onclick="logout()">LOGOUT</button>
+        <div class="top-right">
+            <span id="syncStatus" class="sync-badge syncing">
+                <span class="sync-dot"></span>
+                <span id="syncText">Syncing...</span>
+            </span>
+            <button onclick="logout()">LOGOUT</button>
+        </div>
     </div>
 
     <div class="nav">
@@ -564,8 +617,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
 const recordsRef = database.ref("records");
-
-/* DISABLE LOGIN SESSION MEMORY */
+const connectedRef = database.ref(".info/connected");
 
 const authReady = auth.setPersistence(
     firebase.auth.Auth.Persistence.NONE
@@ -573,6 +625,7 @@ const authReady = auth.setPersistence(
 
 let recordsListener = null;
 let importingOldData = false;
+let isFirebaseConnected = false;
 
 let currentUser = "";
 let activeTab = "purchase";
@@ -593,9 +646,36 @@ function get(id){
     return document.getElementById(id);
 }
 
+function setSyncStatus(state, label){
+    const badge = get("syncStatus");
+    const text = get("syncText");
+    if(!badge || !text) return;
+
+    badge.classList.remove("syncing", "offline");
+    if(state === "syncing"){
+        badge.classList.add("syncing");
+    }else if(state === "offline"){
+        badge.classList.add("offline");
+    }
+    text.innerText = label;
+}
+
+connectedRef.on("value", function(snap){
+    isFirebaseConnected = Boolean(snap.val());
+    if(!currentUser) return;
+
+    if(isFirebaseConnected){
+        setSyncStatus("live", "Live Cloud Sync");
+    }else{
+        setSyncStatus("offline", "Offline");
+    }
+});
+
 /* FIREBASE DATABASE */
 
 function loadData(){
+
+    setSyncStatus(isFirebaseConnected ? "syncing" : "offline", isFirebaseConnected ? "Syncing..." : "Offline");
 
     if(recordsListener){
         recordsRef.off("value", recordsListener);
@@ -628,6 +708,7 @@ function loadData(){
                     if(Array.isArray(old) && old.length){
 
                         importingOldData = true;
+                        setSyncStatus("syncing", "Syncing...");
 
                         const mapped = {};
 
@@ -644,8 +725,10 @@ function loadData(){
                         recordsRef.set(mapped).then(()=>{
                             localStorage.removeItem(DB_KEY);
                             importingOldData = false;
+                            setSyncStatus(isFirebaseConnected ? "live" : "offline", isFirebaseConnected ? "Live Cloud Sync" : "Offline");
                         }).catch(err=>{
                             importingOldData = false;
+                            setSyncStatus("offline", "Sync Error");
                             alert("পুরোনো ডাটা আপলোড হয়নি: " + err.message);
                         });
 
@@ -657,14 +740,18 @@ function loadData(){
         }
 
         refresh();
+        setSyncStatus(isFirebaseConnected ? "live" : "offline", isFirebaseConnected ? "Live Cloud Sync" : "Offline");
     };
 
     recordsRef.on("value", recordsListener, function(error){
+        setSyncStatus("offline", "Sync Error");
         alert("ডাটাবেজ পড়া যাচ্ছে না: " + error.message);
     });
 }
 
 function saveData(){
+
+    setSyncStatus("syncing", "Syncing...");
 
     const data = {};
 
@@ -676,7 +763,12 @@ function saveData(){
         }
     });
 
-    return recordsRef.set(data);
+    return recordsRef.set(data).then(()=>{
+        setSyncStatus(isFirebaseConnected ? "live" : "offline", isFirebaseConnected ? "Live Cloud Sync" : "Offline");
+    }).catch(err=>{
+        setSyncStatus("offline", "Sync Error");
+        throw err;
+    });
 }
 
 /* FIREBASE LOGIN */
